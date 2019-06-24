@@ -97,10 +97,86 @@ data2.unstack().stack()
 #将长格式旋转为宽格式
 data0 = pd.read_excel("D:/cs/P4/time.xlsx")
 #不同item值分别形成一列，并用作列名，时间值作为索引
-data0.pivot('data','item','value')
+pivoted = data0.pivot('data','item','value1')
+pivoted.head()
+#新增一个需要重塑的列value2
+data0['value2'] = np.random.randn(len(data0))
+#重塑时忽略最后一个参数
+pivoted1 = data0.pivot('data','item')
+#pivot其实是一个快捷方式。原方法如下
+unstacked = data0.set_index(['date','item']).unstack('item')
+
+#数据转换
+#移除重复数据
+data1 = DataFrame({'k1':['one']*3 + ['two']*4,'k2':[1,1,2,3,3,4,4]})
+#检查数据是否重复
+data1.duplicated()
+#移除重复数据，默认保留出现的第一个值。如果传入参数则保留最后一个
+data1.drop_duplicates()
+data1.drop_duplicates(['k1','k2'],take_last = True)
+#只根据某列进行重复移除
+data1.drop_duplicates(['k1'])
+
+#数据转换
+data2 = DataFrame({'food':['bacon','pulled pork','bacon','Pastrami','CORNED BEEF','Bacon','pastrami','honey ham','nove lox'],'ounces':[4,3,11,6,7.5,8,3,5,6]})
+meat_to_animal = {'bacon':'pig','pulled pork':'pig','pastrami':'pig','corned beef':'cow','honey ham':'pig','nova lox':'salmon'}
+#利用函数将大写字母转为小写
+data2 = data2['food'].map(str.lower)
+#利用映射进行转换
+data2['animal'] = data2['food'].map(str.lower).map(meat_to_animal)
 
 
+#重命名轴索引
+#upper：转大写；lower：转小写；title：
+data = DataFrame(np.arange(12).reshape((3,4)),index = ['Ohio','Colorado','New York'],columns=['one','two','three','four'])
+#用map转换
+data.index = data.index.map(str.upper)
+#用rename转换
+data.rename(index=str.title,columns = str.upper)
+#改变索引名
+data.rename(index={'Ohio':'Indiana'},columns = {'THREE':'peekaboo'})
 
+#离散化和面元划分
+ages = [20,22,25,27,31,23,37,31,61,45,41,32]
+bins = [18,25,35,60,100]
+data = np.random.randn(20)
+data0 = np.random.randn(1000)
+#划分数据（默认左开右闭），传入参数为面元边界
+cats = pd.cut(ages,bins)
+#设置为左闭右开
+cats = pd.cut(ages,bins,right = False)
+#对每个阶层计数
+pd.value_counts(cats)
+#给每个组设置一个标签
+cats = pd.cut(ages,bins,labels=['a','b','c','d'])
+#划分数据，传入参数为面元数量，会自动根据最大值和最小值计算等长面元
+cats = pd.cut(data,4,precision = 2)
+#qcut会默认根据四分位数来进行切割
+cats = pd.qcut(data0,4)
+#也可以设置自定义的分位数
+pd.qcut(data,[0,0.1,0.5,0.9,1.])
+
+#检测和过滤异常值
+data = DataFrame(np.random.randn(1000,4))
+#分析数据，包括平均值、最大值、四分位数等
+data.describe()
+#找出每列中绝对值超过3的值
+col = data[3]
+col[np.abs(col)>3]
+#找出所有含有“绝对值超过3”的行
+data[(np.abs(data)>3).any(1)]
+#将值限制在-3到3之间
+data[np.abs(data)>3] = np.sign(data) * 3
+
+#排列和随机采样
+df = DataFrame(np.arange(5*4).reshape(5,4))
+sampler = np.random.permutation(5)
+#将df的行顺序按sampler的顺序重排
+df.take(sampler)
+#取前3行
+df.take(sampler)[:3]
+#得到一组随机整数,范围0——4，长度10
+sampler0 = np.random.randint(0,5,size=10)
 
 
 
