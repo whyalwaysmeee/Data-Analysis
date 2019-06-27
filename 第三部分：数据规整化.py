@@ -1,6 +1,8 @@
 import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
+import re
+import json
 
 #合并数据集
 df1 = DataFrame({'key':['b','b','a','c','a','a','b'], 'data1':range(7)})
@@ -177,6 +179,143 @@ df.take(sampler)
 df.take(sampler)[:3]
 #得到一组随机整数,范围0——4，长度10
 sampler0 = np.random.randint(0,5,size=10)
+
+#哑变量
+df = DataFrame({'key':['b','b','a','c','a','b'],'data1':range(6)})
+#得到哑矩阵
+pd.get_dummies(df['key'])
+#给每个列名加前缀
+dummies = pd.get_dummies(df['key'],prefix='key')
+#将data1列合并
+df[['data1']].join(dummies)
+
+#字符串操作
+#字符串对象方法
+val = 'a,b, guido'
+#以逗号为分隔拆分，结果为一个列表
+val.split(',')
+#若需要去除空格
+pieces = [x.strip() for x in val.split(',')]
+#用"::"进行连接
+'::'.join(pieces)
+#检测字符串
+'guido' in val
+#定位字符串(首个出现)，rfind返回最后一个
+val.index(',')
+#如果找不到，index返回异常，find返回-1
+val.find(':')
+#返回出现次数
+val.count(',')
+#替换
+val.replace(',','::')
+
+#正则表达式
+text = "foo bar\t baz \tqux"
+text0 = """Dave dave@google.com
+Steve steve@gmail.com
+Rob rob@gmail.com
+Ryan ryan@yahoo.com
+"""
+#拆分字符串，分隔符为数量不一的空白符(\s+)
+re.split('\s+',text)
+#获取一个可重用的regex对象然后再拆分
+regex = re.compile('\s+')
+regex.split(text)
+#返回所有匹配项，即空白符
+regex.findall(text)
+#获取text0中电子邮件地址，IGNORECASE使正则表达式对大小写不敏感
+pattern = r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}'
+regex = re.compile(pattern,flags=re.IGNORECASE)
+regex.findall(text0)
+#替换
+regex.sub('REDACTED',text0)
+#添加名称
+regex.sub(r'Usename: \1,Domain: \2,Suffi: \3',text0)
+#将地址分为3个部分：用户名、域名及后缀
+pattern0 = r'([A-Z0-9._%+-]+)@([A-Z0-9.-]+)\.([A-Z]{2,4})'
+regex = re.compile(pattern,flags=re.IGNORECASE)
+regex.findall(text0)
+#由这种正则表达式产生的匹配项对象，可通过groups方法返回一个由模式各段组成的元组
+m = regex.match('12345@ctgod.net')
+m.groups()
+
+
+#示例项目：USDA食品数据库
+#该json文件在引入后是一个由字典组成的列表，每一行都是一个字典，其中'portion'和'nutrients'两个key又分别代表一个字典
+db = json.load(open('foods-2011-10-03.json'))
+#查看记录条数
+len(db)
+#查看所有key，该json文件本身没有key，因为它本质是一个列表，是它的每一条记录（即一个字典）含有key
+db[0].keys()
+#查看第一条记录的第一种'nutrients'
+db[0]['nutrients'][0]
+#抽取第一条记录的'nutrients’
+nutrients = DataFrame(db[0]['nutrients'])
+#抽取部分字段
+info_keys = ['description','group','id','manufacturer']
+info = DataFrame(db,columns=info_keys)
+#查看食物类别分布情况（计数）
+pd.value_counts(info.group)
+#对营养数据进行分析
+nutrients0 = []
+for i in db:
+    fnuts = DataFrame(i['nutrients'])
+    fnuts['id'] = i['id']
+    nutrients0.append(fnuts)
+nutrients0 = pd.concat(nutrients0,ignore_index=True)
+#查看重复项数量
+nutrients0.duplicated().sum()
+#去掉重复项
+nutrients0.drop_duplicates()
+#现在要对info和nutrients0进行整合，因为两者都含有'description'和'group'，所以要区分开来
+col_mapping = {'descrption':'food','group':'fgroup'}
+col_mapping0 = {'description':'nutrients','group':'nutgroup'}
+info = info.rename(columns = col_mapping,copy = False)
+nutrients0 = nutrients0.rename(columns = col_mapping0,copy = False)
+ndata = pd.merge(nutrients0,info,on='id',how='outer')
+#查看nadata的第2000项
+ndata.ix[2000]
+#求各营养成分最为丰富的食物是什么，这里只列出含'Amino Acids'类营养最丰富的食物
+by_nutrients = ndata.groupby(['nutgroup','nutrient'])
+get_maximum = lambda x:x.xs(x.value.idxmax())
+get_minimum = lambda x:x.xs(x.value.idxmin())
+max_foods = by_nutrients.apply(get_maximum)[['value','food']]
+max_foods.ix['Amino Acids']['food']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
